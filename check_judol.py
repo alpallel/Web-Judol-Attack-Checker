@@ -23,14 +23,14 @@ try:
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
 except ImportError:
-    msg = (
+    MSG = (
         "Missing required dependency 'requests'.\n"
         "Install it with:\n"
         "  pip install -r requirements.txt\n"
         "or\n"
         "  python -m pip install requests"
     )
-    print(msg, file=sys.stderr)
+    print(MSG, file=sys.stderr)
     raise
 
 
@@ -43,7 +43,7 @@ def parse_sitemap(path: str) -> List[str]:
     if root.tag.startswith('{'):
         ns = root.tag.split('}')[0].strip('{')
     if ns:
-        locs = root.findall(f'.//{{ns}}loc')
+        locs = root.findall('.//{{{}}}loc'.format(ns))
     else:
         locs = root.findall('.//loc')
     urls = [e.text.strip() for e in locs if e is not None and e.text]

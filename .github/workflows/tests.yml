@@ -20,7 +20,10 @@ jobs:
       run: pip install -r requirements.txt
     
     - name: Run linter
-      run: pip install pylint && pylint check_judol.py --disable=C0111,R0913
+      run: pip install pylint && pylint check_judol.py --disable=C0111,R0913,W0613,C0209
     
     - name: Check syntax
       run: python -m py_compile check_judol.py
+    
+    - name: Test imports
+      run: python -c "from check_judol import main, parse_sitemap, make_session, fetch_url; print('All imports successful')"
