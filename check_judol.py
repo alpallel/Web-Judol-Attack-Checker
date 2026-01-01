@@ -23,7 +23,14 @@ try:
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
 except ImportError:
-    print("Missing required dependency 'requests'.\nInstall it with:\n  pip install -r requirements.txt\nor\n  python -m pip install requests", file=sys.stderr)
+    msg = (
+        "Missing required dependency 'requests'.\n"
+        "Install it with:\n"
+        "  pip install -r requirements.txt\n"
+        "or\n"
+        "  python -m pip install requests"
+    )
+    print(msg, file=sys.stderr)
     raise
 
 
@@ -36,16 +43,22 @@ def parse_sitemap(path: str) -> List[str]:
     if root.tag.startswith('{'):
         ns = root.tag.split('}')[0].strip('{')
     if ns:
-        locs = root.findall('.//{{{}}}loc'.format(ns))
+        locs = root.findall(f'.//{{ns}}loc')
     else:
         locs = root.findall('.//loc')
     urls = [e.text.strip() for e in locs if e is not None and e.text]
     return urls
 
 
-def make_session(retries: int = 3, backoff: float = 0.3, timeout: int = 10) -> requests.Session:
+def make_session(retries: int = 3, backoff: float = 0.3,
+                 timeout: int = 10) -> requests.Session:
+    """Create a requests session with retry logic."""
     s = requests.Session()
-    retry = Retry(total=retries, backoff_factor=backoff, status_forcelist=(500, 502, 503, 504))
+    retry = Retry(
+        total=retries,
+        backoff_factor=backoff,
+        status_forcelist=(500, 502, 503, 504)
+    )
     adapter = HTTPAdapter(max_retries=retry)
     s.mount('http://', adapter)
     s.mount('https://', adapter)
@@ -54,13 +67,15 @@ def make_session(retries: int = 3, backoff: float = 0.3, timeout: int = 10) -> r
 
 
 def fetch_url(session: requests.Session, url: str, timeout: int = 10) -> Dict:
+    """Fetch a URL and check for keywords."""
     try:
         r = session.get(url, timeout=timeout)
         text = r.text or ''
         text_lower = text.lower()
-        has_judol = any(keyword in text_lower for keyword in ('judol', 'gacor', 'togel', 'maxwin'))
+        keywords = ('judol', 'gacor', 'togel', 'maxwin')
+        has_judol = any(keyword in text_lower for keyword in keywords)
         exact_judol = text.strip().lower() == 'judol'
-        return { 
+        return {
             'url': url,
             'ok': True,
             'status_code': r.status_code,
@@ -68,7 +83,7 @@ def fetch_url(session: requests.Session, url: str, timeout: int = 10) -> Dict:
             'exact_judol': exact_judol,
             'length': len(text),
         }
-    except Exception as e:
+    except requests.RequestException as e:
         return {'url': url, 'ok': False, 'error': str(e)}
 
 
@@ -89,16 +104,33 @@ def run_checker(sitemap: str, output: str, concurrency: int, timeout: int) -> Di
 
 
 def main(argv: List[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description='Check sitemap pages for the string "judol"')
-    parser.add_argument('--sitemap', '-s', default='sitemap.xml', help='Path to sitemap.xml')
-    parser.add_argument('--output', '-o', default='judol_report.json', help='Output JSON report file')
-    parser.add_argument('--concurrency', '-c', type=int, default=10, help='Number of concurrent requests')
-    parser.add_argument('--timeout', '-t', type=int, default=10, help='Request timeout in seconds')
+    """Main entry point for the judol checker."""
+    parser = argparse.ArgumentParser(
+        description='Check sitemap pages for defacement keywords'
+    )
+    parser.add_argument(
+        '--sitemap', '-s', default='sitemap.xml',
+        help='Path to sitemap.xml'
+    )
+    parser.add_argument(
+        '--output', '-o', default='judol_report.json',
+        help='Output JSON report file'
+    )
+    parser.add_argument(
+        '--concurrency', '-c', type=int, default=10,
+        help='Number of concurrent requests'
+    )
+    parser.add_argument(
+        '--timeout', '-t', type=int, default=10,
+        help='Request timeout in seconds'
+    )
     args = parser.parse_args(argv)
 
     try:
-        report = run_checker(args.sitemap, args.output, args.concurrency, args.timeout)
-    except Exception as e:
+        report = run_checker(
+            args.sitemap, args.output, args.concurrency, args.timeout
+        )
+    except FileNotFoundError as e:
         print(f'Error: {e}', file=sys.stderr)
         return 2
 
@@ -107,7 +139,7 @@ def main(argv: List[str] | None = None) -> int:
     exact = [r for r in report['results'] if r.get('exact_judol')]
 
     print(f'Sitemap: {args.sitemap}  URLs checked: {total}')
-    print(f'Pages containing "judol": {len(found)}')
+    print(f'Pages containing defacement keywords: {len(found)}')
     if found:
         print('\nMatches:')
         for r in found:
