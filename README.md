@@ -4,7 +4,7 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Small tool to check all URLs listed in a sitemap.xml to see whether the page content contains the string "judol" (case-insensitive). This is handy for detecting mass defacement or unexpected replacements.
+Small tool to check all URLs listed in a sitemap.xml to see whether the page content contains the string "judol", "gacor", etc (case-insensitive). This is handy for detecting mass defacement or unexpected replacements.
 
 ## Files created
 - `check_judol.py` — main script (Python 3). Parses sitemap, fetches pages concurrently, writes JSON report.
@@ -18,7 +18,7 @@ Small tool to check all URLs listed in a sitemap.xml to see whether the page con
 cd %USERPROFILE%\Downloads
 ```
 
-2. (Optional) create a venv and install requirements:
+2. Create a venv and install requirements:
 
 ```cmd
 python -m venv .venv
@@ -31,6 +31,20 @@ pip install -r requirements.txt
 ```cmd
 python check_judol.py --sitemap sitemap.xml --output judol_report.json --concurrency 10 --timeout 10
 ```
+### &emsp; Concurrency (default: 10)
+  * Recommended: 5-20 depending on your use case
+    - 5-10: Safe, conservative approach. Good for shared servers or respecting rate limits 
+    - 10-20: Balanced speed vs. resource usage. Good for most scenarios 
+    - 20+: Only if you have a powerful machine and the target servers can handle it
+    - Avoid 100+: Will likely get rate-limited or IP-blocked by servers
+
+
+### &emsp; Timeout (default: 10 seconds)
+  * Recommended: 10-30 seconds
+    - 5 seconds: Too short, may timeout on slow servers
+    - 10 seconds: Good default (what you have). Catches most unresponsive servers
+    - 15-20 seconds: Better for international servers or slower connections
+    - 30+ seconds: Only if targeting very slow services
 
 4. After completion you will see a summary on the console and a full report saved to `judol_report.json`.
 
